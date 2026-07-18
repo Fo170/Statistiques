@@ -20,6 +20,13 @@ Statistiques/
 │   └── build.bat           # Script de compilation Windows
 ├── linux/
 │   └── build.sh            # Script de compilation Linux
+├── exemples/               # Jeux de donnees prets a l'emploi
+│   ├── 01_decharge_condensateur.txt
+│   ├── 02_pendule.txt
+│   ├── 03_croissance_levure.txt
+│   ├── 04_projectile.txt
+│   ├── 05_michaelis_menten.txt
+│   └── 06_allometrie.txt
 ├── AGENTS.md
 ├── README.md
 └── plus_necessaire/        # (supprime) Anciens fichiers DOS/BC++

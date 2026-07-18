@@ -10,6 +10,7 @@ Offre **9 modeles de regression** (+ selection automatique) avec affichage graph
 - **9 regressions + Auto** : de la lineaire a la logistique, avec affichage de r, r², covariance, et tous les parametres
 - **Graphique interactif** : courbe + points, zoom molette, drag souris, auto-ranging, grille, formule + stats en superposition
 - **Export** : resultats sauvegardes dans un fichier texte
+- **Exemples inclus** : 6 jeux de donnees prets a l'emploi dans le dossier `exemples/`
 
 ## Les regressions en details
 
@@ -158,7 +159,7 @@ Lancez l'executable :
 1. **Saisir des donnees** :
    - Menu `Donnees > Saisie manuelle` : entrez les paires X Y
    - Menu `Donnees > Fonction mathematique` : genere des points depuis une fonction (sin, cos, exp...)
-   - Menu `Fichier > Ouvrir` : charge un fichier texte
+   - Menu `Fichier > Ouvrir` : charge un fichier texte (des exemples sont dans le dossier `exemples/`)
 
 2. **Choisir une regression** :
    - Menu `Regression > Mode X` : selectionne un mode specifique
