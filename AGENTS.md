@@ -59,7 +59,11 @@ make -j$(nproc)
 - `regNls()` : regression puissance par Gauss-Newton (mode 4)
   - Initialisation par log-linearisation, puis iterations NLS
   - Points x=0 geres naturellement (Jacobienne nulle)
-- `autoMode()` : teste les 5 modes, retourne le meilleur (r² max)
+- `regRecip()` : regression reciproque y=a+b/x (mode 5) par MCO sur X'=1/x, x=0 exclus
+- `regPoly2()` : regression polynomiale deg 2 y=a+bx+cx² (mode 6) par Cramer 3x3
+- `regSine()` : regression sinusoidale y=a*sin(bx+c)+d (mode 7) par NLS Gauss-Newton 4 params
+- `regLogistic()` : regression logistique y=c/(1+ae^(-bx)) (mode 8) par NLS Gauss-Newton 3 params
+- `autoMode()` : teste les modes 0-8 (lineaire a logistique), retourne le meilleur (r² max)
 - `regFY()` / `regFX()` : evaluation de la courbe de regression
 
 ### ChartWidget (`chartwidget.h/.cpp`)
@@ -82,7 +86,11 @@ make -j$(nproc)
 | 2 | Exponentielle | y = a*e^(b*x) - ty | Log-linearise (ty si ymin<=0) |
 | 3 | Puissance | y = a*(x+tx)^b - ty | Log-linearise (tx=ty=0, points non-positifs exclus) |
 | 4 | Puissance NLS | y = a*x^b | Gauss-Newton (initialise par log-lin, gere x=0) |
-| Auto | Meilleur fit | - | Teste modes 0-4, garde r² max |
+| 5 | Reciproque | y = a + b/x | MCO sur X'=1/x (x=0 exclus) |
+| 6 | Polynome deg 2 | y = a + b*x + c*x^2 | Cramer 3x3 |
+| 7 | Sinusoidal | y = a*sin(bx+c) + d | NLS Gauss-Newton 4 params |
+| 8 | Logistique | y = c/(1+ae^(-bx)) | NLS Gauss-Newton 3 params |
+| Auto | Meilleur fit | - | Teste modes 0-8, garde r² max |
 
 ## Portage depuis l'original (BC++ / DOS)
 

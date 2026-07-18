@@ -10,8 +10,12 @@ Application Qt de regression statistique portee depuis un original DOS (Borland 
   - Mode 1 : Logarithmique (`y = a + b*ln(x+tx)`)
   - Mode 2 : Exponentielle (`y = a*e^(b*x) - ty`)
   - Mode 3 : Puissance (`y = a*(x+tx)^b - ty`)
-  - Mode 4 : Puissance NLS (`y = a*x^b` par Gauss-Newton)
-  - Auto : selection automatique du meilleur modele (r^2 maximum)
+   - Mode 4 : Puissance NLS (`y = a*x^b` par Gauss-Newton)
+   - Mode 5 : Reciproque (`y = a + b/x`)
+   - Mode 6 : Polynomial deg 2 (`y = a + bx + cx²`)
+   - Mode 7 : Sinusoidal (`y = a*sin(bx+c) + d` par Gauss-Newton)
+   - Mode 8 : Logistique (`y = c/(1+ae^(-bx))` par Gauss-Newton)
+   - Auto : selection automatique du meilleur modele (r^2 maximum, modes 0-8)
 - **Graphique** : courbe + points avec zoom (molette), drag (souris), auto-ranging, grille, info de regression en superposition
 - **Export** : resultats sauvegardes dans un fichier texte
 

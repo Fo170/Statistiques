@@ -602,7 +602,7 @@ int StatsEngine::autoMode(const std::vector<double>& xd, const std::vector<doubl
     int bestMode = 0;
     Ldbl bestR = 0.0;
 
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 9; i++) {
         m_rg.mode = i;
         compute(xd, yd);
         Ldbl rAbs = fabsl(m_rg.rcrit);
