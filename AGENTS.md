@@ -62,6 +62,7 @@ make -j$(nproc)
 - `regRecip()` : regression reciproque y=a+b/x (mode 5) par MCO sur X'=1/x, x=0 exclus
 - `regPoly2()` : regression polynomiale deg 2 y=a+bx+cx² (mode 6) par Cramer 3x3
 - `regSine()` : regression sinusoidale y=a*sin(bx+c)+d (mode 7) par NLS Gauss-Newton 4 params
+  - Initialisation : b estime par denombrement des passages par zero, c par correlation lineaire sur sin/cos
 - `regLogistic()` : regression logistique y=c/(1+ae^(-bx)) (mode 8) par NLS Gauss-Newton 3 params
 - `autoMode()` : teste les modes 0-8 (lineaire a logistique), retourne le meilleur (r² max)
 - `regFY()` / `regFX()` : evaluation de la courbe de regression
@@ -69,7 +70,7 @@ make -j$(nproc)
 ### ChartWidget (`chartwidget.h/.cpp`)
 - Affichage courbe (tiree de regFY) + points de donnees
 - Auto-ranging, zoom molette, drag souris
-- Grille, axes, info de regression (2 lignes)
+- Grille, axes, info de regression (2 lignes) avec affichage intelligent des signes
 
 ### Statistiques.cpp (GUI)
 - QMainWindow avec menus : Fichier, Donnees, Regression
@@ -91,6 +92,14 @@ make -j$(nproc)
 | 7 | Sinusoidal | y = a*sin(bx+c) + d | NLS Gauss-Newton 4 params |
 | 8 | Logistique | y = c/(1+ae^(-bx)) | NLS Gauss-Newton 3 params |
 | Auto | Meilleur fit | - | Teste modes 0-8, garde r² max |
+
+## Historique des correctifs recents
+
+- **autoMode** : comparaison directe de rcrit (sans fabsl) pour eviter les faux positifs
+- **regFY mode 5** a x=0 : retourne 0 au lieu de ±1e100
+- **regSine init b** : formule π*nzc/range (etait π*nzc/(2*range), sous-estimation d'un facteur 2)
+- **regSine init c** : correlation lineaire sur sin(bx)/cos(bx) au lieu de c=0 fixe
+- **chart drawInfo** : affichage intelligent des signes (pas de +- pour coefficients negatifs)
 
 ## Portage depuis l'original (BC++ / DOS)
 
