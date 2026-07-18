@@ -390,7 +390,23 @@ void StatsEngine::regSine(const double* xd, const double* yd, ulong nd)
             if ((prev > 0 && cur <= 0) || (prev < 0 && cur >= 0)) nzc++;
             prev = cur;
         }
-        b = (nzc >= 2) ? M_PI * nzc / (2.0 * x_range) : 2.0 * M_PI / x_range;
+        b = (nzc >= 2) ? M_PI * nzc / x_range : 2.0 * M_PI / x_range;
+    }
+    // Estimer c (et raffiner a) par regression lineaire sur sin(bx), cos(bx)
+    if (a > 1e-30 && b > 1e-30) {
+        Ldbl Ss = 0, Sc = 0, Sys = 0, Syc = 0;
+        for (i = 0; i < nd; i++) {
+            Ldbl xi = _L(xd + i), yi = _L(yd + i) - d;
+            Ldbl s = sinl(b * xi), cs = cosl(b * xi);
+            Ss += s * s; Sc += cs * cs;
+            Sys += yi * s; Syc += yi * cs;
+        }
+        Ldbl den = Ss * Sc;
+        if (fabsl(den) > 1e-30) {
+            Ldbl alpha = Sys / Ss, beta = Syc / Sc;
+            a = sqrtl(alpha * alpha + beta * beta);
+            c = atan2l(beta, alpha);
+        }
     }
 
     Ldbl da, db, dc, dd;
