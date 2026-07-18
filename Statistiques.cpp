@@ -277,6 +277,10 @@ int main(int argc, char* argv[])
     mnuReg->addAction("&Exponentielle (mode 2)", [&](){ runRegression(2); });
     mnuReg->addAction("&Puissance (mode 3)", [&](){ runRegression(3); });
     mnuReg->addAction("Puissance &NLS (mode 4)", [&](){ runRegression(4); });
+    mnuReg->addAction("&Reciproque (mode 5)", [&](){ runRegression(5); });
+    mnuReg->addAction("&Polynomial deg 2 (mode 6)", [&](){ runRegression(6); });
+    mnuReg->addAction("&Sinusoidal (mode 7)", [&](){ runRegression(7); });
+    mnuReg->addAction("&Logistique (mode 8)", [&](){ runRegression(8); });
     mnuReg->addSeparator();
     mnuReg->addAction("&Auto (best fit)", &runAutoRegression);
 

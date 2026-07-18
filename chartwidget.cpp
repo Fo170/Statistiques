@@ -262,6 +262,18 @@ void ChartWidget::drawInfo(QPainter& p)
                                                      .arg((double)rg.ty, 0, 'g', 4); break;
     case 4: formula = QString("y=%1*x^%2 (NLS)").arg((double)rg.a, 0, 'g', 6)
                                                   .arg((double)rg.b, 0, 'g', 6); break;
+    case 5: formula = QString("y=%1+%2/x").arg((double)rg.a, 0, 'g', 6)
+                                           .arg((double)rg.b, 0, 'g', 6); break;
+    case 6: formula = QString("y=%1+%2*x+%3*x^2").arg((double)rg.a, 0, 'g', 6)
+                                                   .arg((double)rg.b, 0, 'g', 6)
+                                                   .arg((double)rg.c, 0, 'g', 6); break;
+    case 7: formula = QString("%1*sin(%2*x+%3)+%4").arg((double)rg.a, 0, 'g', 6)
+                                                     .arg((double)rg.b, 0, 'g', 6)
+                                                     .arg((double)rg.c, 0, 'g', 6)
+                                                     .arg((double)rg.d, 0, 'g', 6); break;
+    case 8: formula = QString("%1/(1+%2*e^(-%3*x))").arg((double)rg.c, 0, 'g', 6)
+                                                      .arg((double)rg.a, 0, 'g', 6)
+                                                      .arg((double)rg.b, 0, 'g', 6); break;
     }
 
     p.drawText(10, 26, QString("%1  r=%2  r^2=%3")

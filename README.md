@@ -57,4 +57,3 @@ Lancez l'executable. Utilisez les menus de la barre en haut :
 ## Origine
 
 Portage d'un programme original ecrit en Borland C++ pour DOS (1996).
-Le code source original (STATS.HL) est conserve dans `includes/stats.hl`.

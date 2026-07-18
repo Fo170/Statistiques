@@ -19,13 +19,17 @@ enum RegMode {
     REG_LOGARITHMIQUE  = 1,
     REG_EXPONENTIELLE  = 2,
     REG_PUISSANCE      = 3,
-    REG_PUISSANCE_NLS  = 4
+    REG_PUISSANCE_NLS  = 4,
+    REG_RECIPROQUE     = 5,
+    REG_POLYNOMIAL2    = 6,
+    REG_SINUSOIDAL     = 7,
+    REG_LOGISTIQUE     = 8
 };
 
 struct RG_t {
     int mode;
     Ldbl xmin, xmax, ymin, ymax;
-    Ldbl tx, ty, n, a, b, r, rcrit, cov;
+    Ldbl tx, ty, n, a, b, c, d, r, rcrit, cov;
     Ldbl sx, sy, sxy, sx2, sy2;
 };
 
@@ -53,6 +57,10 @@ private:
     RG_t m_rg;
     void regTpl(const double* xd, const double* yd, ulong nd);
     void regNls(const double* xd, const double* yd, ulong nd);
+    void regRecip(const double* xd, const double* yd, ulong nd);
+    void regPoly2(const double* xd, const double* yd, ulong nd);
+    void regSine(const double* xd, const double* yd, ulong nd);
+    void regLogistic(const double* xd, const double* yd, ulong nd);
 };
 
 #endif
