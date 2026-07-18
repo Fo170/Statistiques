@@ -267,10 +267,16 @@ void ChartWidget::drawInfo(QPainter& p)
     case 6: formula = QString("y=%1+%2*x+%3*x^2").arg((double)rg.a, 0, 'g', 6)
                                                    .arg((double)rg.b, 0, 'g', 6)
                                                    .arg((double)rg.c, 0, 'g', 6); break;
-    case 7: formula = QString("%1*sin(%2*x+%3)+%4").arg((double)rg.a, 0, 'g', 6)
-                                                     .arg((double)rg.b, 0, 'g', 6)
-                                                     .arg((double)rg.c, 0, 'g', 6)
-                                                     .arg((double)rg.d, 0, 'g', 6); break;
+    case 7: {
+        QString cSign = (rg.c >= 0) ? "+" : "";
+        QString dSign = (rg.d >= 0) ? "+" : "";
+        formula = QString("y=%1*sin(%2*x%3%4)%5%6")
+            .arg((double)rg.a, 0, 'g', 6)
+            .arg((double)rg.b, 0, 'g', 6)
+            .arg(cSign).arg((double)rg.c, 0, 'g', 6)
+            .arg(dSign).arg((double)rg.d, 0, 'g', 6);
+        break;
+    }
     case 8: formula = QString("%1/(1+%2*e^(-%3*x))").arg((double)rg.c, 0, 'g', 6)
                                                       .arg((double)rg.a, 0, 'g', 6)
                                                       .arg((double)rg.b, 0, 'g', 6); break;
