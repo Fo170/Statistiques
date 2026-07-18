@@ -600,14 +600,13 @@ void StatsEngine::regLogistic(const double* xd, const double* yd, ulong nd)
 int StatsEngine::autoMode(const std::vector<double>& xd, const std::vector<double>& yd)
 {
     int bestMode = 0;
-    Ldbl bestR = 0.0;
+    Ldbl bestR = -1e100;
 
     for (int i = 0; i < 9; i++) {
         m_rg.mode = i;
         compute(xd, yd);
-        Ldbl rAbs = fabsl(m_rg.rcrit);
-        if (rAbs > bestR) {
-            bestR = rAbs;
+        if (m_rg.rcrit > bestR) {
+            bestR = m_rg.rcrit;
             bestMode = i;
         }
     }
@@ -629,7 +628,7 @@ Ldbl StatsEngine::regFY(Ldbl x) const
         else y = m_rg.a * powl(x, m_rg.b);
     }
     if (m_rg.mode == 5) {
-        if (x == 0.0) y = (m_rg.b > 0) ? 1e100 : -1e100;
+        if (x == 0.0) y = 0;
         else y = m_rg.a + m_rg.b / x;
     }
     if (m_rg.mode == 6) y = m_rg.a + m_rg.b * x + m_rg.c * x * x;
