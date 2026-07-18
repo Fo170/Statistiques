@@ -1,0 +1,554 @@
+// FCT.HCL /11/11/96
+
+// d‚claration des fonctions
+
+#ifdef swap
+#undef swap
+template<class T>
+void swap(T *px,T *py)
+{
+ T tmp;
+ tmp=P(px);
+ P(px)=P(py);
+ P(py)=tmp;
+}
+#endif
+
+#ifdef sgn
+#undef sgn
+int sgn(Ldbl v);
+int sgn(Ldbl v)
+{
+ int s;
+ if(v==0.) s=0.;
+ else
+ {
+  if(v<0.) s=-1.;
+  else s=1.;
+ }
+ return s;
+}
+#endif
+
+#ifdef paire
+#undef paire
+uint paire(Ldbl v);
+uint paire(Ldbl v)
+{
+ return((uint)(fmodl(v,2.)==0.));
+}
+#endif
+
+#ifdef impaire
+#undef impaire
+uint impaire(Ldbl v);
+uint impaire(Ldbl v)
+{
+ return((uint)(fmodl(v,2.)!=0.));
+}
+#endif
+
+#ifdef max
+#undef max
+template<class T>
+T max(T v1,T v2) { return iif(v1>v2,v1,v2); }
+#endif
+
+#ifdef min
+#undef min
+template<class T>
+T min(T v1,T v2) { return iif(v1<v2,v1,v2); }
+#endif
+
+#ifdef asinh
+#undef asinh
+Ldbl asinh(Ldbl x);
+Ldbl asinh(Ldbl x)
+{
+ Ldbl r;
+ if(fabsl(x)<1e2466) r=logl(x+sqrtl(pw2(x)+1.));
+ else
+ {
+  if(0.<x) r=Ln2+logl(x);
+  else r=-1.17e4932;
+ }
+ return r;
+}
+#endif
+
+#ifdef acosh
+#undef acosh
+Ldbl acosh(Ldbl x);
+Ldbl acosh(Ldbl x)
+{
+ Ldbl r;
+ if(x<1.) r=0.;
+ else
+ {
+  if(x<1e2466) r=logl(x+sqrtl(pw2(x)-1.));
+  else r=Ln2+logl(x);
+ }
+ return r;
+}
+#endif
+
+#ifdef atanh
+#undef atanh
+Ldbl atanh(Ldbl x);
+Ldbl atanh(Ldbl x)
+{
+ Ldbl r;
+ if((-1.<x)&&(x<1.)) r=logl((1.+x)/(1.-x))/2.;
+ else r=-1.17e4932;
+ return r;
+}
+#endif
+
+#ifdef nombre
+#undef nombre
+void nombre(Ldbl v);
+void nombre(Ldbl v)
+{
+ fractionL=modfl(v,&entierL);
+}
+#endif
+
+#ifdef number
+#undef number
+void number(Ldbl v);
+void number(Ldbl v)
+{
+ if(v!=0.)
+ {
+  fractionL=modfl(log10l(fabsl(v)),&exposantL);
+  if(fractionL<0.) fractionL++,exposantL--;
+  mantisseL=powl(10.,fractionL);
+  if(v<0.) mantisseL=-mantisseL;
+ }
+ else mantisseL=0.,exposantL=0.;
+}
+#endif
+
+#ifdef number2
+#undef number2
+void number2(Ldbl v);
+void number2(Ldbl v)
+{
+ int expo;
+ mantisseL=frexpl(v,&expo);
+ exposantL=(Ldbl)expo;
+}
+#endif
+
+#define arondi(fct,v,a) (fct(1e##a*v)/1e##a)
+
+#ifdef intg
+#undef intg
+Ldbl intg(Ldbl v);
+#define intg_(v,i) (intg(v*1e##i)/1e##i)
+Ldbl intg(Ldbl v)
+{
+ if(v>0.) v=floorl(v);
+ else v=ceill(v);
+ return v;
+}
+#endif
+
+#ifdef rnd
+#undef rnd
+Ldbl rnd(Ldbl v);
+#define rnd_(v,r) (rnd(v*1e##r)/1e##r)
+Ldbl rnd(Ldbl v)
+{
+ if(v<0.) v=floorl(v);
+ else v=ceill(v);
+ return v;
+}
+#endif
+
+#ifdef round
+#undef round
+Ldbl round(Ldbl v,int r);
+Ldbl round(Ldbl v,int r)
+{
+ v=pow10l(-r)*rnd(v*pow10l(r));
+ return v;
+}
+#endif
+
+#ifdef divs
+#undef divs
+Ldbl divs(Ldbl a,Ldbl b);
+Ldbl divs(Ldbl a,Ldbl b)
+{
+ Ldbl v;
+ if(a!=0)
+ {
+  if(b!=0.)
+  {
+   v=a/b;
+   v+=(a-v*b)/b;
+  }
+  else
+  {
+   if(a<0.) v=-1.17e4932;
+   else v=1.17e4932;
+  }
+ }
+ else
+ {
+  if(b==0.) printf(" 0 / 0 impossible !\n"),getch(),exit(1);
+ }
+ return v;
+}
+#endif
+
+#ifdef fact
+#undef fact
+Ldbl fact(Ldbl f);
+Ldbl fact(Ldbl f)
+{
+ Ldbl v=1.;
+ while(f!=1.) v*=f,f--;
+ return v;
+}
+#endif
+
+#ifdef rec
+#undef rec
+void rec(Ldbl x,Ldbl y);
+void rec(Ldbl x,Ldbl y)
+{
+ V.mdl=hypotl(x,y);
+ V.arg=atan2l(y,x);
+}
+#endif
+
+#ifdef pol
+#undef pol
+void pol(Ldbl m,Ldbl a);
+void pol(Ldbl m,Ldbl a)
+{
+ V.x=m*cosl(a);
+ V.y=m*sinl(a);
+}
+#endif
+
+#ifdef PRB
+#undef PRB
+template<class T>
+void PRB(T *X,T *Y,Ldbl *a,Ldbl *b,Ldbl *cf)
+{
+ Ldbl x1,x2,x3,y1,y2,y3,dy1,dy2;
+ x1=_L(X),x2=_L(X+1),x3=_L(X+2);
+ y1=_L(Y),y2=_L(Y+1),y3=_L(Y+2);
+ dy1=(y1-y2)/(x1-x2),dy2=(y2-y3)/(x2-x3);
+ _(a)=(dy1-dy2)/(x1-x3);
+ _(b)=dy1-_(a)*(x1+x2);
+ _(cf)=y1-_(a)*pw2(x1)-_(b)*x1;
+}
+#endif
+
+#ifdef det3
+#undef det3
+Ldbl det3(Ldbl a1,Ldbl b1,Ldbl c1,Ldbl a2,Ldbl b2,Ldbl c2,Ldbl a3,Ldbl b3,Ldbl c3);
+Ldbl det3(Ldbl a1,Ldbl b1,Ldbl c1,Ldbl a2,Ldbl b2,Ldbl c2,Ldbl a3,Ldbl b3,Ldbl c3)
+{
+ Ldbl d;
+ d=a1*b2*c3+b1*c2*a3+c1*a2*b3-a3*b2*c1-b3*c2*a1-c3*a2*b1;
+ return d;
+}
+#endif
+
+#ifdef Det3
+#undef Det3
+template<class T>
+void Det3(T *X,T *Y,Ldbl *a,Ldbl *b,Ldbl *cf)
+{
+ Ldbl x1,px1,y1,x2,px2,y2,x3,px3,y3,d,da,db,dc;
+ x1=_L(X),x2=_L(X+1),x3=_L(X+2);
+ y1=_L(Y),y2=_L(Y+1),y3=_L(Y+2);
+ px1=pw2(x1),px2=pw2(x2),px3=pw2(x3);
+ d=det3(1.,x1,px1,1.,x2,px2,1.,x3,px3);
+ dc=det3(y1,x1,px1,y2,x2,px2,y3,x3,px3);
+ db=det3(1.,y1,px1,1.,y2,px2,1.,y3,px3);
+ da=det3(1.,x1,y1,1.,x2,y2,1.,x3,y3);
+ _(a)=da/d,_(b)=db/d,_(cf)=dc/d;
+}
+#endif
+
+#ifdef rdich
+#undef rdich
+Ldbl rdich(Ldbl a,Ldbl b,Ldbl val);
+Ldbl rdich(Ldbl a,Ldbl b,Ldbl val)
+{
+ Ldbl x,ya,yb,y;
+ ya=ft(a),yb=ft(b);
+ if(yb<ya) x=a,a=b,b=x;
+ while(fabsl(y-val)>1e-100)
+ {
+  x=(a+b)/2.;
+  y=ft(x);
+  if(y<val) a=x;
+  else b=x;
+ }
+ return x;
+}
+#endif
+
+#ifdef INTE
+#undef INTE
+// INTEGRATION PAR LA METHODE DES TRAPEZES
+/*template<class T>
+Ldbl INTE(T *X,T *Y,ulong N)
+{
+ Ldbl a;
+ ulong dn;
+ a=_L(N-1+X)*_L(N-1+Y)-_L(X)*_L(Y);
+ for(dn=1;dn<N;dn++)
+   a+=_L(dn+X)*_L(dn-1+Y)-_L(dn-1+X)*_L(dn+Y);
+ a/=2.;
+ return a;
+} */
+Ldbl INTE(Ldbl *X,Ldbl *Y,ulong N)
+{
+ Ldbl a;
+ ulong dn;
+ a=_L(N-1+X)*_L(N-1+Y)-_L(X)*_L(Y);
+ for(dn=1;dn<N;dn++)
+   a+=_L(dn+X)*_L(dn-1+Y)-_L(dn-1+X)*_L(dn+Y);
+ a/=2.;
+ return a;
+}
+#endif
+
+#ifdef SIMPSON
+#undef SIMPSON
+template<class T>
+Ldbl SIMPSON(T *X,T *Y,ulong N)
+{
+ ulong i,Ni;
+ Ldbl a,b,cf,S;
+ if(N==2) S=(_L(X+1)-_L(X))*(_L(Y)+_L(Y+1))/2.;
+ else
+ {
+  S=0.;
+  Ni=N-fmodl(N,3);
+  for(i=0;i<Ni;i+=3)
+  {
+	PRB(X+i,Y+i,&a,&b,&cf);
+	S+=a*(pw3(_L(X+i+2))-pw3(_L(X+i)))/3.;
+	S+=b*(pw2(_L(X+i+2))-pw2(_L(X+i)))/2.;
+	S+=cf*(_L(X+i+2)-_L(X+i));
+  }
+  if(Ni!=N)
+  {
+	PRB(X+N-3,Y+N-3,&a,&b,&cf);
+	S+=a*(pw3(_L(X+N-1))-pw3(_L(X+Ni)))/3.;
+	S+=b*(pw2(_L(X+N-1))-pw2(_L(X+Ni)))/2.;
+	S+=cf*(_L(X+N-1)-_L(X+Ni));
+  }
+ }
+ return S;
+}
+#endif
+
+#ifdef gauss
+#undef gauss
+template<class T>
+void gauss(T *M,T *My,T *CF,ulong N)
+{
+ Ldbl k;
+ ulong c,d,di,i,j,l,li,sq;
+ if((CF=(T *)calloc(N,sizeof(T)))!=NULL)
+ {
+  for(sq=1;sq<N;sq++)
+  {
+   d=sq-1;
+   for(l=sq;l<N;l++)
+   {
+	li=l*N,di=d*N;
+	if(_L(d+di+M)==0.)
+	{
+	 for(j=d+1;j<N;j++)
+	 {
+	  k=_L(d+j*N+M);
+	  if(k!=0.)
+	  {
+	   for(i=0;i<N;i++) swap(i+j*N+M,i+di+M);
+	   swap(d+My,j+My),j=N;
+	  }
+	 }
+	}
+	if((_L(d+li+M)!=0.)&&(_L(d+di+M)!=0.))
+	{
+	 k=_L(d+li+M)/_L(d+di+M);
+	 for(c=0;c<N;c++) _L(c+li+M)-=k*_L(c+di+M);
+	 _L(My+l)-=k*_L(My+d);
+	}
+   }
+  }
+  for(l=N-1;l>=0;l--)
+  {
+   if(_L(M+l*(N+1))!=0.)
+   {
+	k=_L(My+l)/_L(M+l*(N+1));
+	for(j=l;j>=0;j--) _L(My+j)-=k*_L(M+j*N+l);
+   }
+   else k=0.;
+   _(CF+l)=(T)k;
+  }
+ }
+ else
+ {
+  printf(" M‚moire insuffisante pour le tableau de Gauss\n");
+  exit(1);
+ }
+}
+#endif
+
+#ifdef MC_LAURIN
+#undef MC_LAURIN
+template<class T>
+void MC_LAURIN(T *X,T *Y,T *CF,ulong N)
+{
+ ulong c,l;
+ Ldbl x;
+ T *M;
+ if((M=(T *)calloc(N*N,sizeof(T)))!=NULL)
+ {
+  for(l=0;l<N;l++)
+  {
+   _(N*l+M)=1.,x=_L(l+X),_(1+N*l+M)=(T)x;
+   for(c=2;c<N;c++)
+   {
+	if(x!=0.) _L(c+N*l+M)=(T)powl(_L(l+X),(Ldbl)c);
+	else _(c+N*l+M)=0.;
+   }
+  }
+  gauss(M,Y,CF,N);
+  free(M);
+ }
+ else
+ {
+  printf(" M‚moire insuffisante pour le tableau de MC Laurin\n");
+  exit(1);
+ }
+}
+#endif
+
+#ifdef rdm
+#undef rdm
+float rdm(void);
+float rdm(void)
+{
+ float rd;
+ rd=(float)(random(200001)-100000)/100000.;
+ return rd;
+}
+#endif
+
+float TRGfst(float x);
+float FSTsin(Ldbl x);
+float FSTcos(Ldbl x);
+//float FSTtan(Ldbl x);
+//float FSTatan2(Ldbl y,Ldbl x);
+
+float TRGfst(float x)
+{
+ return((1.014228085-(.04968101944+.121410965*x)*x)*x);
+}
+float FSTsin(Ldbl x)
+{
+ Ldbl abs;
+ float s=1.;
+ if(x<0.) s=-1.;
+ abs=fmodl(fabsl(x),PIx2);
+ if(M_PI<abs) abs-=M_PI,s*=-1.;
+ if(M_PI_2<abs) abs=M_PI-abs;
+ return(TRGfst(abs)*s);
+}
+float FSTcos(Ldbl x)
+{
+ return(FSTsin(x+M_PI_2));
+}
+/*float FSTtan(Ldbl x)
+{
+ return(FSTsin(x)/FSTcos(x));
+}
+float FSTatan2(Ldbl y,Ldbl x)
+{
+ float rst;
+ if(
+} */
+#ifdef FASTgraph
+#define sinG(x) FSTsin(x)
+#define cosG(x) FSTcos(x)
+#define tanG(x) FSTtan(x)
+#define atan2G(y,x) FSTatan2(y,x)
+#else
+#define sinG(x) sinl(x)
+#define cosG(x) cosl(x)
+#define tanG(x) tanl(x)
+#define atan2G(y,x) atan2(y,x)
+#endif
+
+
+#ifdef MV
+#undef MV
+void MV(Ldbl xx,Ldbl yy,Ldbl zz,Ldbl ax,Ldbl ay,Ldbl az);
+void MV(Ldbl xx,Ldbl yy,Ldbl zz,Ldbl ax,Ldbl ay,Ldbl az)
+{
+  Ldbl cs,sn,x,x1,y,y1,z,z1;
+  x=xx,y=yy,z=zz;
+  cs=cosl(ax),sn=sinl(ax);
+  y1=y*cs+z*sn;
+  z1=z*cs-y*sn;
+  y=y1,z=z1;
+  cs=cosl(ay),sn=sinl(ay);
+  x1=x*cs+z*sn;
+  z1=z*cs-x*sn;
+  x=x1,V.z=z1;
+  cs=cosl(az),sn=sinl(az);
+  x1=x*cs+y*sn;
+  y1=y*cs-x*sn;
+  V.x=x1,V.y=y1;
+}
+#endif
+
+#ifdef FAST_MV
+#undef FAST_MV
+void FAST_MV(Ldbl xx,Ldbl yy,Ldbl zz,Ldbl ax,Ldbl ay,Ldbl az);
+void FAST_MV(Ldbl xx,Ldbl yy,Ldbl zz,Ldbl ax,Ldbl ay,Ldbl az)
+{
+  Ldbl cs,sn,x,x1,y,y1,z,z1;
+  x=xx,y=yy,z=zz;
+  cs=FSTcos(ax),sn=FSTsin(ax);
+  y1=y*cs+z*sn;
+  z1=z*cs-y*sn;
+  y=y1,z=z1;
+  cs=FSTcos(ay),sn=FSTsin(ay);
+  x1=x*cs+z*sn;
+  z1=z*cs-x*sn;
+  x=x1,V.z=z1;
+  cs=FSTcos(az),sn=FSTsin(az);
+  x1=x*cs+y*sn;
+  y1=y*cs-x*sn;
+  V.x=x1,V.y=y1;
+}
+#endif
+
+#ifdef T3D
+#undef T3D
+void T3D(Ldbl x,Ldbl y,Ldbl z);
+void T3D(Ldbl x,Ldbl y,Ldbl z)
+{
+  Ldbl d;
+  d=sqrtl(pw2(x)+pw2(y)+pw2((V.cz+z)));
+  V.x=V.tx+V.cx+x*V.fc/d;
+  V.y=V.ty+V.cy+y*V.fc/d;
+}
+#endif
+
+
+

@@ -1,0 +1,248 @@
+/* STATS.HC /06/07/96 */
+#ifdef stats
+#undef stats
+
+struct
+{
+ int mode;
+ Ldbl xmin,xmax,ymin,ymax;
+ Ldbl tx,ty,n,a,b,r,rcrit,cov;
+ Ldbl sx,sy,sxy,sx2,sy2;
+} RG;
+
+#define Rlin(x)  RG.mode=0,REG(x)
+#define Rlog(x)  RG.mode=1,REG(x)
+#define Rexp(x)  RG.mode=2,REG(x)
+#define Rpwr(x)  RG.mode=3,REG(x)
+
+Ldbl REGfy(Ldbl x);
+Ldbl REGfx(Ldbl y);
+void Afn(Ldbl x0,Ldbl y0,Ldbl x1,Ldbl y1);
+void affREG(void);
+
+Ldbl REGfy(Ldbl x)
+{
+ Ldbl y;
+ if(RG.mode==0) y=RG.a+RG.b*x;
+ if(RG.mode==1) y=RG.a+RG.b*LN(x+RG.tx);
+ if(RG.mode==2) y=RG.a*expl(RG.b*x)-RG.ty;
+ if(RG.mode==3) y=RG.a*powl(x+RG.tx,RG.b)-RG.ty;
+ return y;
+}
+Ldbl REGfx(Ldbl y)
+{
+ Ldbl x;
+ if(RG.mode==0) x=(y-RG.a)/RG.b;
+ if(RG.mode==1) x=expl((y-RG.a)/RG.b)-RG.tx;
+ if(RG.mode==2) x=LN((y+RG.ty)/RG.a)/RG.b-RG.tx;
+ if(RG.mode==3) x=powl(((y+RG.ty)/RG.a),1./RG.b)-RG.tx;
+ return x;
+}
+void Afn(Ldbl x0,Ldbl y0,Ldbl x1,Ldbl y1)
+{
+ RG.a=(y0*x1-y1*x0)/(x1-x0);
+ RG.b=(y1-y0)/(x1-x0);
+ RG.mode=0;
+}
+template<class T>
+void REG(T *xd,T *yd,ulong nd)
+{
+ ulong i;
+ Ldbl x,y,psx,Rnsx2_psx,Rnsxy_sxsy;
+ RG.xmin=RG.ymin=1.17e4932;
+ RG.xmax=RG.ymax=-1.17e4932;
+ RG.n=(Ldbl)nd;
+ for(i=0;i<nd;i++)
+ {
+  x=_L(xd+i),y=_L(yd+i);
+  if(x<RG.xmin) RG.xmin=x;
+  if(y<RG.ymin) RG.ymin=y;
+  if(x>RG.xmax) RG.xmax=x;
+  if(y>RG.ymax) RG.ymax=y;
+ }
+ RG.tx=0.,RG.ty=0.;
+ if((RG.mode==1)||(RG.mode==3))
+ {
+  if(RG.xmin<=0.) RG.tx=1.-RG.xmin;
+ }
+ if((RG.mode==2)||(RG.mode==3))
+ {
+  if(RG.ymin<=0.) RG.ty=1.-RG.ymin;
+ }
+ RG.sx=RG.sy=RG.sxy=RG.sx2=RG.sy2=0.;
+ for(i=0;i<nd;i++)
+ {
+  x=_L(xd+i)+RG.tx,y=_L(yd+i)+RG.ty;
+  if((RG.mode==1)||(RG.mode==3)) x=LN(x);
+  if((RG.mode==2)||(RG.mode==3)) y=LN(y);
+  RG.sx=RG.sx+x;
+  RG.sy=RG.sy+y;
+  RG.sxy=RG.sxy+x*y;
+  RG.sx2=RG.sx2+pw2(x);
+  RG.sy2=RG.sy2+pw2(y);
+ }
+ Rnsxy_sxsy=RG.n*RG.sxy-RG.sx*RG.sy;
+ Rnsx2_psx=RG.n*RG.sx2-pw2(RG.sx);
+ RG.b=Rnsxy_sxsy/Rnsx2_psx;
+ RG.a=(RG.sy-RG.b*RG.sx)/RG.n;
+ if((RG.mode==2)||(RG.mode==3)) RG.a=expl(RG.a);
+ RG.r=Rnsxy_sxsy/sqrtl(Rnsx2_psx*(RG.n*RG.sy2-pw2(RG.sy)));
+ RG.rcrit=pw2(RG.r);
+ RG.cov=(RG.sxy-RG.sx*RG.sy/RG.n)/(RG.n-1.);
+}
+void affREG(void)
+{
+ clrscr();
+ if(RG.mode==0)
+ {
+  printf(" REGRESSION LINEAIRE (MODE 0)\n");
+  printf(" y=a+b*x , x=(y-a)/b\n");
+ }
+ if(RG.mode==1)
+ {
+  printf(" REGRESSION LOGARITHMIQUE (MODE 1)\n");
+  printf(" y=a+b*ln(x+tx) , x=e^((y-a)/b)-tx\n");
+ }
+ if(RG.mode==2)
+ {
+  printf(" REGRESSION EXPONENTIELLE (MODE 2)\n");
+  printf(" y=a*e^(b*x)-ty , x=ln((y+ty)/a)/b-tx\n");
+ }
+ if(RG.mode==3)
+ {
+  printf(" REGRESSION PUISSANCE (MODE 3)\n");
+  printf(" y=a*(x+tx)^b-ty, x=((y+ty)/a)^(1/b)-tx\n");
+ }
+ printf(" A = %Lg , B = %Lg , r = %Lg\n",RG.a,RG.b,RG.r);
+ printf(" coefficient critique = %Lg ,covariance = %Lg\n",RG.rcrit,RG.cov);
+ printf(" SX = %Lg ,SX^2 = %Lg\n",RG.sx,RG.sx2);
+ printf(" SY = %Lg ,SY^2 = %Lg\n",RG.sy,RG.sy2);
+ printf(" SXY = %Lg ,N = %Lg\n",RG.sxy,RG.n);
+ printf(" Tx = %Lg , Ty = %Lg\n",RG.tx,RG.ty);
+ printf(" XMIN = %Lg , XMAX = %Lg\n",RG.xmin,RG.xmax);
+ printf(" YMIN = %Lg , YMAX = %Lg\n\n",RG.ymin,RG.ymax);
+}
+template<class T>
+void regG(T *xd,T *yd,int md)
+{
+ uint i;
+ Ldbl dx,n,x,y;
+ V.xmin=RG.xmin,V.ymin=RG.ymin;
+ V.xmax=RG.xmax,V.ymax=RG.ymax;
+ for(i=0;i<RG.n;i++)
+ {
+  x=_L(xd+i),y=REGfy(x);
+  if(y<V.ymin) V.ymin=y;
+  if(V.ymax<y) V.ymax=y;
+  y=_L(yd+i),x=REGfx(y);
+  if(x<V.xmin) V.xmin=x;
+  if(V.xmax<x) V.xmax=x;
+ }
+ rangeG();
+ if(md==1) cleardevice();
+ GRIS_FONCE
+ drt(V.xmin,0.,V.xmax,0.);
+ drt(0.,V.ymin,0.,V.ymax);
+ dx=(V.xmax-V.xmin)/1000.;
+ n=0.;
+ for(i=0;i<1000;i++)
+ {
+  x=V.xmin+dx*n,y=REGfy(x);
+  recG(x,y,bleu);
+  n++;
+ }
+ for(i=0;i<RG.n;i++)
+ {
+  x=_L(xd+i),y=_L(yd+i);
+  recG(x,y,jaune);
+ }
+}
+template<class T>
+void modifDT(T *xd,T *yd,ulong nd)
+{
+ char txt;
+ ulong i,j;
+ Ldbl k,dx,dy,dy0,n,x,xi,y,yi;
+ RG.n=(Ldbl)nd;
+ regG(xd,yd,1);
+ i=0,txt='C';
+ while(txt!='R')
+ {
+  if(i==RG.n) i=0;
+  clrscr();
+  printf(" 'C'HANGER LE POINT\n");
+  printf(" 'R'ETOUR AU MENU\n");
+  printf(" 'P'OINT AUTOMATIQUE\n");
+  xi=_L(xd+i),yi=_L(yd+i);
+  dy=REGfy(xi)-yi;
+  printf(" ERR(Y) = %Lg   \n",dy);
+  regG(xd,yd,0);
+  recG(xi,yi,rouge);
+  txt=GETCH();
+  if(txt=='P')
+  {
+   dy=0;
+   for(i=0;i<RG.n;i++)
+   {
+	x=_L(xd+i),dy0=fabsl(REGfy(x)-_L(yd+i));
+	if(dy0>dy) dy=dy0,j=i,xi=x;
+   }
+   i=j,txt='C';
+  }
+  if(txt=='C')
+  {
+   if(i!=0) _(xd+i)=_(xd),_(yd+i)=_(yd);
+   else _(xd+i)=_(xd+1),_(yd+i)=_(yd+1);
+   REG(xd,yd,nd);
+   _(xd+i)=(T)xi,_(yd+i)=(T)REGfy(xi),i=0;
+   REG(xd,yd,nd);
+   affREG();
+   printf("  TAPER UNE TOUCHE\n");
+   getch();
+   for(i=0;i<nd;i++)
+   {
+	x=_L(xd+i),y=_L(yd+i),k=i+1;
+	printf(" X( %u ) = %Lg ,Y( %u ) = %Lg\n",i+1,x,i+1,y);
+	if((floorl(k/10)==k/10)&&(9<k)) getch();
+   }
+   printf("  TAPER UNE TOUCHE\n");
+   getch();
+   regG(xd,yd,1);
+  }
+  else recG(xi,yi,jaune),i++;
+ }
+}
+template<class T>
+void modifDTauto(T *xd,T *yd,ulong nd)
+{
+ ulong i,j;
+ Ldbl dy,dy0,x,xi,y,yi;
+ RG.n=(Ldbl)nd;
+ while(fabsl(RG.r)<0.999)
+ {
+  regG(xd,yd,0),dy=0.,j=RG.n;
+  for(i=0;i<RG.n;i++)
+  {
+   x=_L(xd+i),y=_L(yd+i);
+   dy0=fabsl(REGfy(x)-y);
+   if(dy0>dy) dy=dy0,j=i,xi=x,yi=y;
+  }
+  if(j<RG.n)
+  {
+   recG(xi,yi,rouge);
+   if(j!=0) _(xd+j)=_(xd),_(yd+j)=_(yd);
+   else _(xd+j)=_(xd+1),_(yd+j)=_(yd+1);
+   REG(xd,yd,nd);
+   _(xd+j)=(T)xi,_(yd+j)=(T)REGfy(xi);
+   REG(xd,yd,nd);
+   regG(xd,yd,1);
+   recG(xi,yi,jaune);
+  }
+ }
+}
+#endif
+
+
+
+
+

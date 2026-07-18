@@ -1,0 +1,86 @@
+/* RGM.HC (Rangement)/02/07/96 */
+
+#ifdef ORD
+#undef ORD
+template<class C,class D>
+void ORD(C *xd,D nd)
+{
+ unsigned long i,j,n=0;
+ C x,xmin;
+ double dx;
+ while(n!=nd)
+ {
+  xmin=_(xd+n),j=n;
+  for(i=n+1;i<nd;i++)
+  {
+	x=_(xd+i);
+	if(x<xmin) xmin=x,j=i;
+  }
+  if(j!=n) swap(xd+n,xd+j);
+  n++;
+ }
+}
+#endif
+
+#ifdef ORD2
+#undef ORD2
+template<class C,class D>
+void ORD2(C *xd,C *yd,D nd)
+{
+ unsigned long i,j,k,n=0;
+ C x,xmin;
+ while(n!=nd)
+ {
+  xmin=_(xd+n),j=n;
+  for(i=n+1;i<nd;i++)
+  {
+	x=_(xd+i);
+	if(x<xmin) xmin=x,j=i;
+  }
+  if(j!=n) swap(xd+n,xd+j),swap(yd+n,yd+j);
+  n++;
+ }
+ for(i=0;i<nd-1;i++)
+ {
+  if(_(xd+i)==_(xd+i+1))
+  {
+	n=0;
+	for(j=i+1;j<nd;j++) if(_(xd+i)==_(xd+j)) n++;
+	k=n+1;
+	ORD(yd+i,k);
+  }
+ }
+}
+#endif
+
+#ifdef ORD3
+#undef ORD3
+template<class C,class D>
+void ORD3(C *xd,C *yd,C *zd,D nd)
+{
+ unsigned long i,j,k,n=0;
+ C x,xmin;
+ while(n!=nd)
+ {
+  xmin=_(xd+n),j=n;
+  for(i=n+1;i<nd;i++)
+  {
+	x=_(xd+i);
+	if(x<xmin) xmin=x,j=i;
+  }
+  if(j!=n) swap(xd+n,xd+j),swap(yd+n,yd+j),swap(zd+n,zd+j);
+  n++;
+ }
+ for(i=0;i<nd-1;i++)
+ {
+  if(_(xd+i)==_(xd+i+1))
+  {
+	n=0;
+	for(j=i+1;j<nd;j++) if(_(xd+i)==_(xd+j)) n++;
+	k=n+1;
+	ORD2(yd+i,zd+i,k);
+  }
+ }
+}
+#endif
+
