@@ -194,7 +194,7 @@ La regression se lance automatiquement apres chaque ajout ou modification des do
 - **Logistique (mode 8)** : NLS Gauss-Newton 3 parametres. Si les donnees ne sont pas sigmoidales, peut diverger → utiliser manuellement.
 - **Auto** : teste les 9 modeles sequentiellement. Les modes NLS (4, 7, 8) peuvent ralentir l'auto pour de grands jeux de donnees.
 
-## Corrections Mathématiques (v2.1)
+## Corrections Mathématiques (v1.0)
 
 Une audit mathématique complet a identifié et corrigé **20+ bugs** de cohérence :
 
