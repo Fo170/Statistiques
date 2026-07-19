@@ -81,19 +81,47 @@ void StatsEngine::regTpl(const double* xd, const double* yd, ulong nd)
 
     if ((m_rg.mode == 2) || (m_rg.mode == 3)) m_rg.a = expl(m_rg.a);
 
-    // r, r², cov on ALL points in ORIGINAL space
+    // r, r², cov: For modes 1,2,3 with excluded points, calc stats ONLY on valid points
+    // Otherwise calc on ALL points in ORIGINAL space
     Ldbl sy_tot = 0, sy2 = 0, y_avg = 0, x_avg = 0;
     Ldbl r_num = 0, r_den_x = 0, r_den_y = 0;
-    for (i = 0; i < nd; i++) {
-        x_avg += _L(xd + i);
-        y_avg += _L(yd + i);
-    }
-    x_avg /= m_rg.n;
-    y_avg /= m_rg.n;
+    Ldbl nn_stats = m_rg.n;
 
+    // For modes 1,2,3: recalculate averages on valid points only
+    if (m_rg.mode == 1 || m_rg.mode == 2 || m_rg.mode == 3) {
+        Ldbl x_count = 0;
+        for (i = 0; i < nd; i++) {
+            Ldbl xi = _L(xd + i);
+            Ldbl yi = _L(yd + i);
+            // Check same conditions as in MCO loop
+            Ldbl xt = xi + m_rg.tx, yt = yi + m_rg.ty;
+            if ((m_rg.mode == 1 || m_rg.mode == 3) && xt <= 0.0) continue;
+            if ((m_rg.mode == 2 || m_rg.mode == 3) && yt <= 0.0) continue;
+            x_avg += xi;
+            y_avg += yi;
+            x_count += 1.0;
+        }
+        nn_stats = x_count;
+        if (nn_stats > 0) { x_avg /= nn_stats; y_avg /= nn_stats; }
+    } else {
+        for (i = 0; i < nd; i++) {
+            x_avg += _L(xd + i);
+            y_avg += _L(yd + i);
+        }
+        x_avg /= m_rg.n;
+        y_avg /= m_rg.n;
+    }
+
+    // Calculate stats on same points used for regression
     for (i = 0; i < nd; i++) {
         Ldbl xi = _L(xd + i);
         Ldbl yi = _L(yd + i);
+        // Skip excluded points for modes 1,2,3
+        if (m_rg.mode == 1 || m_rg.mode == 2 || m_rg.mode == 3) {
+            Ldbl xt = xi + m_rg.tx, yt = yi + m_rg.ty;
+            if ((m_rg.mode == 1 || m_rg.mode == 3) && xt <= 0.0) continue;
+            if ((m_rg.mode == 2 || m_rg.mode == 3) && yt <= 0.0) continue;
+        }
         Ldbl yp = regFY(xi);
         Ldbl dy = yi - y_avg;
         Ldbl dr = yi - yp;
@@ -107,9 +135,17 @@ void StatsEngine::regTpl(const double* xd, const double* yd, ulong nd)
     }
 
     m_rg.rcrit = (sy_tot > 0.0) ? 1.0 - sy2 / sy_tot : 0.0;
-    m_rg.r = (r_den_x > 0 && r_den_y > 0)
-             ? r_num / sqrtl(r_den_x * r_den_y) : 0.0;
-    m_rg.cov = sy2 / (m_rg.n - 2.0); // residual variance (MSE)
+
+    // For non-linear regression, r (correlation coeff) is mathematically invalid
+    // Use rcrit (R²) as the goodness-of-fit measure instead
+    if (m_rg.mode >= 1 && m_rg.mode <= 8) {
+        m_rg.r = m_rg.rcrit;  // Use R² for non-linear modes
+    } else {
+        // For linear mode (0), use correlation coefficient
+        m_rg.r = (r_den_x > 0 && r_den_y > 0)
+                 ? r_num / sqrtl(r_den_x * r_den_y) : 0.0;
+    }
+    m_rg.cov = (nn_stats > 2.0) ? sy2 / (nn_stats - 2.0) : 0.0;
 }
 
 void StatsEngine::regNls(const double* xd, const double* yd, ulong nd)
@@ -235,8 +271,7 @@ void StatsEngine::regNls(const double* xd, const double* yd, ulong nd)
     }
 
     m_rg.rcrit = (sy_tot > 0.0) ? 1.0 - sy2 / sy_tot : 0.0;
-    m_rg.r = (r_den_x > 0 && r_den_y > 0)
-             ? r_num / sqrtl(r_den_x * r_den_y) : 0.0;
+    m_rg.r = m_rg.rcrit;  // For non-linear regression, use R² as goodness-of-fit measure
     m_rg.cov = sy2 / (m_rg.n - 2.0);
 }
 
@@ -597,6 +632,9 @@ void StatsEngine::regLogistic(const double* xd, const double* yd, ulong nd)
         else { a += delta[0]; b += delta[1]; c += delta[2]; if (a <= 0) a = 1e-6; if (c <= 0) c = 1e-6; }
     }
 
+    // Validate logistic parameters: a > 0, c > 0 required for valid sigmoid
+    if (a <= 0.0) a = 1e-6;
+    if (c <= 0.0) c = 1e-6;
     m_rg.a = a; m_rg.b = b; m_rg.c = c;
 
     Ldbl sy_tot = 0, sy2 = 0, y_avg = 0, x_avg = 0;
@@ -676,7 +714,13 @@ Ldbl StatsEngine::regFX(Ldbl y) const
         Ldbl disc = m_rg.b * m_rg.b - 4.0 * m_rg.c * (m_rg.a - y);
         if (disc >= 0) x = (-m_rg.b + sqrtl(disc)) / (2.0 * m_rg.c);
     }
-    if (m_rg.mode == 7) x = (asinl((y - m_rg.d) / m_rg.a) - m_rg.c) / m_rg.b;
+    if (m_rg.mode == 7) {
+        if (m_rg.b != 0.0) {
+            Ldbl arg = (m_rg.a != 0.0) ? (y - m_rg.d) / m_rg.a : 0.0;
+            if (arg >= -1.0 && arg <= 1.0) x = (asinl(arg) - m_rg.c) / m_rg.b;
+            else x = 0.0; // out of domain
+        }
+    }
     if (m_rg.mode == 8) {
         Ldbl tmp = m_rg.c / y - 1.0;
         x = (tmp > 0) ? -logl(tmp / m_rg.a) / m_rg.b : 0;
