@@ -100,8 +100,44 @@ make -j$(nproc)
 | 8 | Logistique | y = c/(1+ae^(-bx)) | NLS Gauss-Newton 3 params |
 | Auto | Meilleur fit | - | Teste modes 0-8, garde r² max |
 
-## Historique des correctifs recents
+## Historique des Correctifs - V2.1 (Audit Mathématique Complet)
 
+### Bugs Critiques (5 issues majeures résolues)
+1. **regTpl mode 3 (Puissance)**: INCOHÉRENCE MAJEURE
+   - Paramètres a,b estimés sur subset (x>0, y>0)
+   - Statistiques r,r²,cov calculées sur TOUS les points
+   - **Fix**: Exclure points du subset des statistiques, utiliser nn_stats pour cov
+
+2. **Modes 1,2 (Log/Exp)**: cov biaisé si points exclus
+   - **Fix**: Recalculer moyennes sur points valides, utiliser nn_stats
+
+3. **Mode 7 (Sinusoidale)**: NaN dans asin
+   - **Problem**: asin requiert arg ∈ [-1,1], pas vérifié
+   - **Fix**: Check (y-d)/a ∈ [-1,1], valider a≠0, b≠0
+
+4. **Mode 8 (Logistique)**: Pas de validation post-NLS
+   - **Problem**: NLS peut converger vers paramètres dégénérés (a≤0, c≤0)
+   - **Fix**: Force a>0, c>0 après convergence
+
+5. **Tous modes**: Coefficient r invalide pour non-linéaire
+   - **Problem**: Pearson correlation n'a pas de sens mathématique pour y_nonlinear
+   - **Fix**: Utiliser R² (rcrit) pour modes 1-8, r=correlation seulement mode 0
+
+### Bugs Graves (15+ cas gérés)
+- **Mode 1**: Validation domaine logl(x+tx) > 0 en regFY ✓
+- **Mode 2**: Validation domaine ln((y+ty)/a) > 0 en regFX ✓
+- **Mode 3**: Validation domaine pow(x+tx, b) > 0 en regFY ✓
+- **Mode 4**: Clarification handling x≤0 (undefined pour x^b) ✓
+- **Mode 4 regFX**: Validation complète y,a,b,b≠0 ✓
+- **Mode 5**: Robustesse numérique |y-a| ≥ 1e-30 au lieu de ==0 ✓
+- **Mode 5 regRecip**: Validation b≠0 après MCO ✓
+- **Mode 6**: Support DEUX racines quadratique (avant: seulement +) ✓
+- **Mode 6**: Gestion c≈0 (devient linéaire) ✓
+- **Mode 6**: Gestion disc<0 (aucune solution réelle) ✓
+- **Mode 7**: Validation a≠0, b≠0 post-NLS ✓
+- **Mode 8**: Validation a>0, c>0, b≠0 dans regFX ✓
+
+### Ancien Historique (pré-v2.1)
 - **autoMode** : comparaison directe de rcrit (sans fabsl) pour eviter les faux positifs
 - **regFY mode 5** a x=0 : retourne 0 au lieu de ±1e100
 - **regSine init b** : formule π*nzc/range (etait π*nzc/(2*range), sous-estimation d'un facteur 2)

@@ -194,6 +194,27 @@ La regression se lance automatiquement apres chaque ajout ou modification des do
 - **Logistique (mode 8)** : NLS Gauss-Newton 3 parametres. Si les donnees ne sont pas sigmoidales, peut diverger → utiliser manuellement.
 - **Auto** : teste les 9 modeles sequentiellement. Les modes NLS (4, 7, 8) peuvent ralentir l'auto pour de grands jeux de donnees.
 
+## Corrections Mathématiques (v2.1)
+
+Une audit mathématique complet a identifié et corrigé **20+ bugs** de cohérence :
+
+### Bugs Critiques Éliminés
+- **Mode 3 (Puissance)**: Incohérence majeure - statistiques calculées sur points exclus du MCO ✓
+- **Mode 7 (Sinusoidale)**: NaN possible dans asin si y hors domaine [-d-a, d+a] ✓
+- **Tous modes**: Coefficient r invalide pour régressions non-linéaires (utilise R² maintenant) ✓
+
+### Améliorations par Mode
+- **Mode 1,2**: Statistiques cohérentes (exclude points exclus du MCO) ✓
+- **Mode 4**: Validation paramètres a>0, b≠0 ✓
+- **Mode 5**: Gestion robuste du cas y≈a ✓
+- **Mode 6**: Support DEUX racines du polynôme (avant: seulement +) ✓
+- **Mode 6**: Gestion c≈0 (devient linéaire) ✓
+- **Mode 8**: Validation sigmoid post-NLS ✓
+
+**Voir:** [CORRECTIONS_APPLIQUEES.md](CORRECTIONS_APPLIQUEES.md) pour la liste complète
+
+---
+
 ## Origine
 
 Portage d'un programme original ecrit en Borland C++ pour DOS (1996).
