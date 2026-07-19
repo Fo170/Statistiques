@@ -75,6 +75,7 @@ void StatsEngine::regTpl(const double* xd, const double* yd, ulong nd)
     Rnsxy_sxsy = nn * m_rg.sxy - m_rg.sx * m_rg.sy;
     Rnsx2_psx  = nn * m_rg.sx2 - pw2(m_rg.sx);
 
+    if (fabsl(Rnsx2_psx) < 1e-30) return;
     m_rg.b = Rnsxy_sxsy / Rnsx2_psx;
     m_rg.a = (m_rg.sy - m_rg.b * m_rg.sx) / nn;
 
@@ -661,7 +662,7 @@ Ldbl StatsEngine::regFX(Ldbl y) const
     Ldbl x = 0;
     if (m_rg.mode == 0) x = (y - m_rg.a) / m_rg.b;
     if (m_rg.mode == 1) x = expl((y - m_rg.a) / m_rg.b) - m_rg.tx;
-    if (m_rg.mode == 2) x = logl((y + m_rg.ty) / m_rg.a) / m_rg.b - m_rg.tx;
+    if (m_rg.mode == 2) x = logl((y + m_rg.ty) / m_rg.a) / m_rg.b;
     if (m_rg.mode == 3) x = powl(((y + m_rg.ty) / m_rg.a), 1.0 / m_rg.b) - m_rg.tx;
     if (m_rg.mode == 4) {
         if (y <= 0.0 && m_rg.b > 0.0) x = 0.0;
@@ -727,7 +728,7 @@ std::string StatsEngine::resultsText() const
         os << "y = a + b*ln(x+tx) , x = e^((y-a)/b) - tx\n";
     } else if (m_rg.mode == 2) {
         os << "REGRESSION EXPONENTIELLE (MODE 2)\n";
-        os << "y = a*e^(b*x) - ty , x = ln((y+ty)/a)/b - tx\n";
+        os << "y = a*e^(b*x) - ty , x = ln((y+ty)/a)/b\n";
     } else if (m_rg.mode == 3) {
         os << "REGRESSION PUISSANCE (MODE 3)\n";
         os << "y = a*(x+tx)^b - ty , x = ((y+ty)/a)^(1/b) - tx\n";
