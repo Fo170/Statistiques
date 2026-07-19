@@ -218,4 +218,3 @@ Une audit mathématique complet a identifié et corrigé **20+ bugs** de cohére
 ## Origine
 
 Portage d'un programme original ecrit en Borland C++ pour DOS (1996).
-Le code source historique est conserve dans le dossier `includes/` (fichiers `.hcl` et `.hl`).
