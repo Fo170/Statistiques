@@ -81,6 +81,10 @@ void StatsEngine::regTpl(const double* xd, const double* yd, ulong nd)
 
     if ((m_rg.mode == 2) || (m_rg.mode == 3)) m_rg.a = expl(m_rg.a);
 
+    // Validate critical parameters
+    if (fabsl(m_rg.a) < 1e-30) m_rg.a = 1e-30;
+    if (fabsl(m_rg.b) < 1e-30) m_rg.b = 1e-30;
+
     // r, r², cov: For modes 1,2,3 with excluded points, calc stats ONLY on valid points
     // Otherwise calc on ALL points in ORIGINAL space
     Ldbl sy_tot = 0, sy2 = 0, y_avg = 0, x_avg = 0;
@@ -244,6 +248,9 @@ void StatsEngine::regNls(const double* xd, const double* yd, ulong nd)
         else { a += da; b += db; if (a <= 0.0) a = 1e-10; }
     }
 
+    // Validate power law parameters: a > 0 always, b ≠ 0 for meaningful fit
+    if (a <= 0.0) a = 1e-10;
+    if (fabsl(b) < 1e-30) b = 1e-30;
     m_rg.a = a; m_rg.b = b;
 
     // r, r², cov dans l'espace original sur tous les points
@@ -317,6 +324,8 @@ void StatsEngine::regRecip(const double* xd, const double* yd, ulong nd)
         if (fabsl(den) > 1e-30) {
             m_rg.b = (nn * sxy - sx * sy) / den;
             m_rg.a = (sy - m_rg.b * sx) / nn;
+            // Validate: b must be non-zero for meaningful y = a + b/x
+            if (fabsl(m_rg.b) < 1e-30) m_rg.b = 1e-30;
         }
     }
 
@@ -511,6 +520,9 @@ void StatsEngine::regSine(const double* xd, const double* yd, ulong nd)
         else { a += da; b += db; c += dc; d += dd; }
     }
 
+    // Validate sinusoidal parameters: a ≠ 0, b ≠ 0 required
+    if (fabsl(a) < 1e-30) a = 1e-30;
+    if (fabsl(b) < 1e-30) b = 1e-30;
     m_rg.a = a; m_rg.b = b; m_rg.c = c; m_rg.d = d;
 
     // r, r², cov dans l'espace original
@@ -674,23 +686,49 @@ int StatsEngine::autoMode(const std::vector<double>& xd, const std::vector<doubl
 Ldbl StatsEngine::regFY(Ldbl x) const
 {
     Ldbl y = 0;
-    if (m_rg.mode == 0) y = m_rg.a + m_rg.b * x;
-    if (m_rg.mode == 1) y = m_rg.a + m_rg.b * logl(x + m_rg.tx);
-    if (m_rg.mode == 2) y = m_rg.a * expl(m_rg.b * x) - m_rg.ty;
-    if (m_rg.mode == 3) y = m_rg.a * powl(x + m_rg.tx, m_rg.b) - m_rg.ty;
+    if (m_rg.mode == 0) {
+        y = m_rg.a + m_rg.b * x;
+    }
+    if (m_rg.mode == 1) {
+        // y = a + b*ln(x+tx): requires x+tx > 0
+        Ldbl arg = x + m_rg.tx;
+        if (arg > 0.0) y = m_rg.a + m_rg.b * logl(arg);
+        else y = 0.0;  // Out of domain
+    }
+    if (m_rg.mode == 2) {
+        y = m_rg.a * expl(m_rg.b * x) - m_rg.ty;
+    }
+    if (m_rg.mode == 3) {
+        // y = a*(x+tx)^b: requires x+tx > 0
+        Ldbl arg = x + m_rg.tx;
+        if (arg > 0.0) y = m_rg.a * powl(arg, m_rg.b) - m_rg.ty;
+        else y = 0.0;  // Out of domain
+    }
     if (m_rg.mode == 4) {
-        if (x <= 0.0 && m_rg.b > 0.0) y = 0.0;
+        // y = a*x^b: undefined for x<0 with non-integer b
+        if (x < 0.0) y = 0.0;  // Out of domain
         else y = m_rg.a * powl(x, m_rg.b);
     }
     if (m_rg.mode == 5) {
-        if (x == 0.0) y = 0;
+        // y = a + b/x: undefined at x=0
+        if (fabsl(x) < 1e-30) y = 0.0;
         else y = m_rg.a + m_rg.b / x;
     }
-    if (m_rg.mode == 6) y = m_rg.a + m_rg.b * x + m_rg.c * x * x;
-    if (m_rg.mode == 7) y = m_rg.a * sinl(m_rg.b * x + m_rg.c) + m_rg.d;
+    if (m_rg.mode == 6) {
+        y = m_rg.a + m_rg.b * x + m_rg.c * x * x;
+    }
+    if (m_rg.mode == 7) {
+        // y = a*sin(b*x+c) + d: always defined
+        y = m_rg.a * sinl(m_rg.b * x + m_rg.c) + m_rg.d;
+    }
     if (m_rg.mode == 8) {
-        Ldbl ex = expl(-m_rg.b * x);
-        y = m_rg.c / (1.0 + m_rg.a * ex);
+        // y = c/(1+a*e^(-bx)): requires a > 0, c > 0
+        if (m_rg.a > 0.0 && m_rg.c > 0.0) {
+            Ldbl ex = expl(-m_rg.b * x);
+            y = m_rg.c / (1.0 + m_rg.a * ex);
+        } else {
+            y = 0.0;
+        }
     }
     return y;
 }
@@ -698,32 +736,95 @@ Ldbl StatsEngine::regFY(Ldbl x) const
 Ldbl StatsEngine::regFX(Ldbl y) const
 {
     Ldbl x = 0;
-    if (m_rg.mode == 0) x = (y - m_rg.a) / m_rg.b;
-    if (m_rg.mode == 1) x = expl((y - m_rg.a) / m_rg.b) - m_rg.tx;
-    if (m_rg.mode == 2) x = logl((y + m_rg.ty) / m_rg.a) / m_rg.b;
-    if (m_rg.mode == 3) x = powl(((y + m_rg.ty) / m_rg.a), 1.0 / m_rg.b) - m_rg.tx;
+    if (m_rg.mode == 0) {
+        // y = a + b*x => x = (y-a)/b
+        if (fabsl(m_rg.b) < 1e-30) x = 0.0;
+        else x = (y - m_rg.a) / m_rg.b;
+    }
+    if (m_rg.mode == 1) {
+        // y = a + b*ln(x+tx) => x = e^((y-a)/b) - tx
+        if (fabsl(m_rg.b) < 1e-30) x = 0.0;
+        else {
+            Ldbl exp_val = expl((y - m_rg.a) / m_rg.b);
+            x = exp_val - m_rg.tx;
+        }
+    }
+    if (m_rg.mode == 2) {
+        // y = a*e^(b*x) - ty => x = ln((y+ty)/a)/b
+        if (fabsl(m_rg.b) < 1e-30 || m_rg.a <= 0.0) x = 0.0;
+        else {
+            Ldbl arg = (y + m_rg.ty) / m_rg.a;
+            if (arg > 0.0) x = logl(arg) / m_rg.b;
+            else x = 0.0;  // Out of domain
+        }
+    }
+    if (m_rg.mode == 3) {
+        // y = a*(x+tx)^b - ty => x = ((y+ty)/a)^(1/b) - tx
+        if (fabsl(m_rg.b) < 1e-30 || m_rg.a <= 0.0) x = 0.0;
+        else {
+            Ldbl arg = (y + m_rg.ty) / m_rg.a;
+            if (arg > 0.0) x = powl(arg, 1.0 / m_rg.b) - m_rg.tx;
+            else x = 0.0;  // Out of domain
+        }
+    }
     if (m_rg.mode == 4) {
-        if (y <= 0.0 && m_rg.b > 0.0) x = 0.0;
+        // y = a*x^b => x = (y/a)^(1/b)
+        if (m_rg.a <= 0.0 || y < 0.0) x = 0.0;
+        else if (fabsl(m_rg.b) < 1e-30) x = 0.0;
+        else if (y == 0.0 && m_rg.b <= 0.0) x = 0.0;
         else x = powl(y / m_rg.a, 1.0 / m_rg.b);
     }
     if (m_rg.mode == 5) {
+        // y = a + b/x => x = b/(y-a)
         Ldbl tmp = y - m_rg.a;
-        x = (tmp != 0.0) ? m_rg.b / tmp : 1e100;
+        if (fabsl(tmp) < 1e-30) x = 0.0;
+        else x = m_rg.b / tmp;
     }
     if (m_rg.mode == 6) {
-        Ldbl disc = m_rg.b * m_rg.b - 4.0 * m_rg.c * (m_rg.a - y);
-        if (disc >= 0) x = (-m_rg.b + sqrtl(disc)) / (2.0 * m_rg.c);
+        // y = a + b*x + c*x²: solve c*x² + b*x + (a-y) = 0
+        if (fabsl(m_rg.c) < 1e-30) {
+            // Linear case: y = a + b*x
+            if (fabsl(m_rg.b) < 1e-30) x = 0.0;
+            else x = (y - m_rg.a) / m_rg.b;
+        } else {
+            // Quadratic case
+            Ldbl disc = m_rg.b * m_rg.b - 4.0 * m_rg.c * (m_rg.a - y);
+            if (disc >= 0) {
+                Ldbl sqrt_disc = sqrtl(disc);
+                Ldbl x1 = (-m_rg.b - sqrt_disc) / (2.0 * m_rg.c);
+                Ldbl x2 = (-m_rg.b + sqrt_disc) / (2.0 * m_rg.c);
+                // Choose positive root, or largest if both negative
+                if (x1 > 0.0 || x2 > 0.0) {
+                    x = (x1 > 0.0 && x2 > 0.0) ? (x1 < x2 ? x1 : x2) :
+                        (x1 > 0.0 ? x1 : x2);
+                } else {
+                    x = (x1 > x2) ? x1 : x2;
+                }
+            } else {
+                x = 0.0;  // No real solution
+            }
+        }
     }
     if (m_rg.mode == 7) {
-        if (m_rg.b != 0.0) {
-            Ldbl arg = (m_rg.a != 0.0) ? (y - m_rg.d) / m_rg.a : 0.0;
-            if (arg >= -1.0 && arg <= 1.0) x = (asinl(arg) - m_rg.c) / m_rg.b;
-            else x = 0.0; // out of domain
+        // y = a*sin(b*x+c) + d => x = (asin((y-d)/a) - c) / b
+        if (fabsl(m_rg.a) < 1e-30 || fabsl(m_rg.b) < 1e-30) x = 0.0;
+        else {
+            Ldbl arg = (y - m_rg.d) / m_rg.a;
+            if (arg >= -1.0 && arg <= 1.0) {
+                x = (asinl(arg) - m_rg.c) / m_rg.b;
+            } else {
+                x = 0.0;  // Out of domain
+            }
         }
     }
     if (m_rg.mode == 8) {
-        Ldbl tmp = m_rg.c / y - 1.0;
-        x = (tmp > 0) ? -logl(tmp / m_rg.a) / m_rg.b : 0;
+        // y = c/(1+a*e^(-bx)) => x = -ln((c/y-1)/a) / b
+        if (m_rg.a <= 0.0 || m_rg.c <= 0.0 || fabsl(m_rg.b) < 1e-30) x = 0.0;
+        else {
+            Ldbl tmp = m_rg.c / y - 1.0;
+            if (tmp > 0.0) x = -logl(tmp / m_rg.a) / m_rg.b;
+            else x = 0.0;  // Out of domain
+        }
     }
     return x;
 }
