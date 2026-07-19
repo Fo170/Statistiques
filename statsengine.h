@@ -46,6 +46,9 @@ public:
     Ldbl regFY(Ldbl x) const;
     Ldbl regFX(Ldbl y) const;
 
+    // Extrapolation detection: returns true if x or y is outside training domain
+    bool isExtrapolation(Ldbl x, Ldbl y) const;
+
     void printResults() const;
     std::string resultsText() const;
 

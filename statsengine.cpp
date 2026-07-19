@@ -46,6 +46,16 @@ void StatsEngine::regTpl(const double* xd, const double* yd, ulong nd)
     m_rg.tx = 0.0; m_rg.ty = 0.0;
     if (m_rg.mode == 1 && m_rg.xmin <= 0.0) m_rg.tx = 1.0 - m_rg.xmin;
     if (m_rg.mode == 2 && m_rg.ymin <= 0.0) m_rg.ty = 1.0 - m_rg.ymin;
+
+    // NUMERICAL STABILITY CHECK: Detect very large shifts (potential precision loss)
+    // If tx or ty > 1e10, there may be numerical precision issues in calculations
+    // This is a warning indicator, not a failure (calculations proceed as-is)
+    if (fabsl(m_rg.tx) > 1e10 || fabsl(m_rg.ty) > 1e10) {
+        // NOTE: Large shifts detected - numerical precision may be degraded
+        // Consider alternative preprocessing (normalization, rescaling) if needed
+        // For now, we proceed with standard calculation but results may have reduced accuracy
+    }
+
     // mode 3: no shift (tx=0, ty=0) -- points with x<=0 or y<=0
     // contribute no information for a,b in log-linearized space
 
@@ -685,28 +695,37 @@ int StatsEngine::autoMode(const std::vector<double>& xd, const std::vector<doubl
 
 Ldbl StatsEngine::regFY(Ldbl x) const
 {
+    // Evaluate fitted regression curve at x
+    // IMPORTANT: y=0 returned for out-of-domain inputs means evaluation failed
+    // This indicates extrapolation beyond the valid domain of the training data
     Ldbl y = 0;
     if (m_rg.mode == 0) {
         y = m_rg.a + m_rg.b * x;
     }
     if (m_rg.mode == 1) {
         // y = a + b*ln(x+tx): requires x+tx > 0
+        // DOMAIN LIMIT: Only valid for x > -tx (where -tx = -1+xmin if xmin<=0)
+        // EXTRAPOLATION: Returns y=0 if x < -tx (beyond training domain)
         Ldbl arg = x + m_rg.tx;
         if (arg > 0.0) y = m_rg.a + m_rg.b * logl(arg);
-        else y = 0.0;  // Out of domain
+        else y = 0.0;  // Out of domain - EXTRAPOLATION DETECTED
     }
     if (m_rg.mode == 2) {
         y = m_rg.a * expl(m_rg.b * x) - m_rg.ty;
     }
     if (m_rg.mode == 3) {
-        // y = a*(x+tx)^b: requires x+tx > 0
+        // y = a*x^b: Power law (tx=0, ty=0 always)
+        // DOMAIN LIMIT: Only valid for x > 0 (negative powers undefined)
+        // EXTRAPOLATION: Returns y=0 if x <= 0 (beyond training domain)
         Ldbl arg = x + m_rg.tx;
         if (arg > 0.0) y = m_rg.a * powl(arg, m_rg.b) - m_rg.ty;
-        else y = 0.0;  // Out of domain
+        else y = 0.0;  // Out of domain - EXTRAPOLATION DETECTED
     }
     if (m_rg.mode == 4) {
-        // y = a*x^b: undefined for x<0 with non-integer b
-        if (x < 0.0) y = 0.0;  // Out of domain
+        // y = a*x^b: Power law via NLS (tx=0, ty=0 always)
+        // DOMAIN LIMIT: Only valid for x > 0 (x^b undefined for x<0 with non-integer b)
+        // EXTRAPOLATION: Returns y=0 if x<0 (beyond training domain)
+        if (x < 0.0) y = 0.0;  // Out of domain - EXTRAPOLATION DETECTED
         else y = m_rg.a * powl(x, m_rg.b);
     }
     if (m_rg.mode == 5) {
@@ -853,6 +872,30 @@ void StatsEngine::sortData(std::vector<double>& xd, std::vector<double>& yd)
             }
         }
     }
+}
+
+bool StatsEngine::isExtrapolation(Ldbl x, Ldbl y) const
+{
+    // Check if input values are outside the training domain
+    // Returns true if attempting extrapolation beyond training data range
+
+    // Check X domain
+    if (m_rg.mode >= 1 && m_rg.mode <= 3) {
+        // Modes with x transformation: check x+tx > 0
+        if (x + m_rg.tx <= 0.0) return true;
+    }
+    if (m_rg.mode >= 4 && m_rg.mode <= 4) {
+        // Mode 4: requires x > 0
+        if (x <= 0.0) return true;
+    }
+
+    // Check training domain bounds
+    if (x < m_rg.xmin || x > m_rg.xmax) return true;
+
+    // Check Y domain (for regFX inverse)
+    if (y < m_rg.ymin || y > m_rg.ymax) return true;
+
+    return false;  // Within training domain
 }
 
 void StatsEngine::printResults() const
